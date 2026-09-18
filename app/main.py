@@ -194,7 +194,19 @@ def optimize_energy(request: OptimizeRequest) -> OptimizeResponse:
     except interpret.InterpretationError as exc:
         # Safe failure (§08): the model is unreachable or returned garbage.
         # Mark everything no_op and still return a valid schedule.
-        logger.warning("interpretation unavailable, degrading to no_op: %s", exc)
+        #
+        # The resolved route is logged alongside the error because the failure
+        # that matters most here is a *misconfiguration*, not an outage: if the
+        # key is set but the route variables are not, the service silently falls
+        # back to the built-in defaults, ships the operator's key to the wrong
+        # provider, and degrades every note — which looks identical to a real
+        # provider outage in the response body. Naming the route makes the
+        # difference visible in one log line.
+        logger.warning(
+            "interpretation unavailable on route [%s], degrading to no_op: %s",
+            interpret.describe_route_safe(),
+            exc,
+        )
         warnings.append("language model unavailable; notes treated as non-operative")
 
     # ---- 2. Deterministic guardrails --------------------------------------

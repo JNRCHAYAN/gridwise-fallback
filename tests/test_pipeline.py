@@ -612,3 +612,45 @@ def test_model_failure_still_returns_valid_plan(client, public_cases, monkeypatc
     body = response.json()
     assert all(e["directive_type"] == "no_op" for e in body["directive_interpretation"])
     assert len(body["hourly_plan"]) == 24
+
+
+def test_route_is_described_without_leaking_the_key(monkeypatch):
+    """The degradation log names the route so a misconfiguration is visible.
+
+    It must show where the request went without ever printing the credential.
+    """
+    from app import interpret
+
+    secret = "sk-super-secret-value"
+    monkeypatch.setenv("LLM_API_KEY", secret)
+    described = interpret.describe_route()
+
+    assert "::" in described and "@" in described
+    assert secret not in described
+    assert interpret.is_configured() is True
+
+
+def test_describe_route_safe_survives_a_malformed_numeric_var(monkeypatch):
+    """A bad LLM_TIMEOUT_SECONDS must not turn safe failure into a 500 (§08).
+
+    ``_settings`` parses two numerics. On the degradation path those are read
+    *inside* the exception handler, so an unguarded parse error would escape as
+    an unhandled exception instead of the no_op fallback.
+    """
+    from app import interpret
+
+    monkeypatch.setenv("LLM_TIMEOUT_SECONDS", "not-a-number")
+    with pytest.raises(ValueError):
+        interpret.describe_route()
+
+    assert "unresolved" in interpret.describe_route_safe()
+
+
+def test_malformed_numeric_var_still_degrades_to_no_op(client, public_cases, monkeypatch):
+    """End to end: the malformed var reaches the handler but still returns 200."""
+    monkeypatch.setenv("LLM_TIMEOUT_SECONDS", "not-a-number")
+    response = client.post("/optimize-energy", json=public_cases[0]["input"])
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert all(e["directive_type"] == "no_op" for e in body["directive_interpretation"])
+    assert len(body["hourly_plan"]) == 24

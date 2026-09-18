@@ -118,6 +118,20 @@ def describe_route() -> str:
     return f"{settings['style']} :: {settings['model']} @ {settings['base_url']}"
 
 
+def describe_route_safe() -> str:
+    """Like :func:`describe_route`, but never raises.
+
+    Called from the failure path. ``_settings`` parses two numeric variables, so
+    a malformed ``LLM_TIMEOUT_SECONDS`` or ``LLM_MAX_TOKENS`` would otherwise
+    raise *inside* the degradation handler and turn a graceful no_op fallback
+    into a 500 — the opposite of what §08 asks for.
+    """
+    try:
+        return describe_route()
+    except Exception:  # noqa: BLE001 — diagnostics must never mask the real error
+        return "route unresolved (malformed LLM_* environment variable)"
+
+
 def _build_user_message(notes: list[str], battery: dict[str, float]) -> str:
     battery_lines = "\n".join(f"- {key}: {value}" for key, value in battery.items())
     note_lines = "\n".join(f"{index}: {note}" for index, note in enumerate(notes))
