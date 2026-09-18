@@ -28,6 +28,18 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+# Load a local .env when one is present, so the README quickstart is a single
+# command rather than a shell incantation. Guarded because python-dotenv is not
+# a hard requirement: uvicorn[standard] provides it, and a bare install must
+# still start. load_dotenv() never overrides variables that are already set in
+# the real environment, so a deployed container's configuration always wins.
+try:  # pragma: no cover - import guard
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:  # pragma: no cover - python-dotenv absent
+    pass
+
 from . import interpret
 from .guardrails import compile_directives, validate_interpretation
 from .optimizer import optimize
