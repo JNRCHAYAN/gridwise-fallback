@@ -86,19 +86,19 @@ curl -s http://localhost:8000/health
 ```bash
 curl -s -X POST http://localhost:8000/optimize-energy \
   -H "Content-Type: application/json" \
-  -d @<(python -c "
-import json,sys
-pack = json.load(open('tools/public_sample_cases.json'))
-json.dump(pack['cases'][0]['input'], sys.stdout)
-") | python -m json.tool | head -30
+  -d @tools/sample_request.json
 ```
 
-Expected: HTTP 200, `directive_interpretation` containing one entry per note with
-`directive_type: "solar_reduction"` for note 0, and `total_cost_bdt: 38365.0`.
+`tools/sample_request.json` ships in the repository and is byte-identical to
+case `SAMPLE-01` of the organiser's public pack, so there is nothing to prepare.
 
-A fully expanded, copy-pasteable request body is in
-[Sample request and response](#sample-request-and-response) below if you prefer
-not to use the shell substitution.
+Expected: HTTP 200, `directive_interpretation` holding one entry per note — note
+0 `solar_reduction` with `hours: [12, 13]`, `factor: 0.25`; note 1 `no_op` with
+`applies: false` and a null adjustment — and `total_cost_bdt: 38365.0`, matching
+the organiser's reference for this case.
+
+The complete request body and the full response are in
+[Sample request and response](#sample-request-and-response) below.
 
 ---
 
@@ -401,11 +401,12 @@ Returns `scenario_id`, `directive_interpretation` (exactly one entry per note, i
 ```bash
 curl -s -X POST http://localhost:8000/optimize-energy \
   -H "Content-Type: application/json" \
-  -d @sample.json
+  -d @tools/sample_request.json
 ```
 
 The complete 24-hour body is in
-[Sample request and response](#sample-request-and-response) below.
+[Sample request and response](#sample-request-and-response) below, and
+`docs/DEPLOYMENT.md` covers hosting this service on a public platform.
 
 | Status | Meaning |
 |---|---|
@@ -423,8 +424,9 @@ A body carrying 23 hours is a `400`, not a `422`. Error bodies are always
 
 ## Sample request and response
 
-Full request body — the first case of the organiser's public pack. Save as
-`sample.json` and post it:
+Full request body — this is `tools/sample_request.json`, the first case of the
+organiser's public pack, reproduced here so the contract is readable in one
+place:
 
 ```bash
 curl -s -X POST http://localhost:8000/optimize-energy \
@@ -613,7 +615,10 @@ gridwise-fallback/
 │   └── test_pipeline.py unit, contract, OpenAPI and public-case tests (59)
 ├── tools/
 │   ├── run_public_cases.py        offline and live sample-pack runner
-│   └── public_sample_cases.json   organiser's public pack, vendored
+│   ├── public_sample_cases.json   organiser's public pack, vendored
+│   └── sample_request.json        ready-to-post SAMPLE-01 request body
+├── docs/
+│   └── DEPLOYMENT.md    hosting guide: cold starts, env vars, verification
 ├── Dockerfile           container image (no baked secrets)
 ├── .dockerignore        keeps .env and local state out of the build
 ├── requirements.txt     pinned dependencies
