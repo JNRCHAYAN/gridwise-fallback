@@ -63,9 +63,12 @@ docker login
 docker push <dockerhub-user>/gridwise-llm:1.0.0
 
 # 4. Deploy on the host, pointing at that image
-#    Set environment variables LLM_API_KEY, LLM_BASE_URL, LLM_MODEL
+#    Set environment variables LLM_API_KEY, LLM_BASE_URL, LLM_MODEL, LLM_API_STYLE
 #    Expose port 8000
 ```
+
+The image is already published at `jnrchayan/gridwise-llm:1.0.0`, so step 3 is
+done — this is the reference the submission points at.
 
 The image must stay **pullable for the whole evaluation window** — do not
 delete the tag.
@@ -84,11 +87,19 @@ Set these in the host's dashboard, never in the repository:
 
 ```
 LLM_API_KEY=<secret>
-LLM_BASE_URL=https://capi.aerolink.lat
-LLM_MODEL=claude-haiku-4-5-20251001
+LLM_BASE_URL=https://api.deepseek.com
+LLM_MODEL=deepseek-chat
+LLM_API_STYLE=openai
 ```
 
-Optional: `LLM_API_STYLE`, `LLM_TIMEOUT_SECONDS`, `LLM_MAX_TOKENS`, `LOG_LEVEL`.
+`LLM_API_STYLE` is not optional in practice: leave it out and the service falls
+back to the Anthropic request shape and sends your key to the wrong provider.
+Optional extras: `LLM_TIMEOUT_SECONDS`, `LLM_MAX_TOKENS`, `LOG_LEVEL`.
+
+All four of these must be set. A *partial* configuration — the key present but
+the route variables absent — is the failure mode described in the README's
+**Known limitations**: the service silently degrades every note to `no_op` while
+still returning HTTP 200.
 
 ---
 

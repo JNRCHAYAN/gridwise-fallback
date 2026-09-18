@@ -239,20 +239,33 @@ docker run --rm -p 9000:9000 \
 ### Registry reference
 
 The build above is the verified local path. The organizer-facing fallback image
-is published at:
+is published on Docker Hub and can be pulled and started with these two commands
+and nothing else:
 
-```
-docker pull <REGISTRY>/gridwise-llm:1.0.0
-docker run --rm -p 8000:8000 -e LLM_API_KEY=your-key-here <REGISTRY>/gridwise-llm:1.0.0
+```bash
+docker pull jnrchayan/gridwise-llm:1.0.0
+docker run --rm -p 8000:8000 -e LLM_API_KEY=your-key-here jnrchayan/gridwise-llm:1.0.0
+
+# Verify (second terminal)
+curl -s http://localhost:8000/health
+# {"status":"ok"}
 ```
 
 | | |
 |---|---|
-| Image reference | `<REGISTRY>/gridwise-llm:1.0.0` |
+| Image reference | `jnrchayan/gridwise-llm:1.0.0` |
+| Digest | `sha256:28a56c41467cd04ace0246205549066763db81c4a91cb6bfa95d479a88330656` |
+| Registry | Docker Hub (`docker.io`), public — no login required to pull |
 | Exposed port | `8000` (override with `-e PORT=...`) |
 | Required env var | `LLM_API_KEY` |
 | Optional env vars | `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_STYLE`, `LLM_TIMEOUT_SECONDS`, `LLM_MAX_TOKENS`, `PORT`, `LOG_LEVEL` |
 | Baked secrets | none |
+
+The Docker Hub repository is public — an unauthenticated `docker pull` of the
+reference above succeeds, with no login and no token. The digest is recorded so
+the exact submitted bytes can be identified even if the tag is later moved; pull
+by digest with `docker pull jnrchayan/gridwise-llm@sha256:28a56c41...` if you
+need to be certain you have the submitted image.
 
 **Container defaults.** The image sets `LLM_API_STYLE=openai`,
 `LLM_BASE_URL=https://api.deepseek.com` and `LLM_MODEL=deepseek-chat` — the route
