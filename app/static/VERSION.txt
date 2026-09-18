@@ -1,1 +1,20 @@
-swagger-ui-dist 5.33.0
+Vendored front-end assets — provenance
+======================================
+
+Package : swagger-ui-dist
+Version : 5.33.0
+Source  : https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.33.0/
+Licence : Apache-2.0 (Swagger UI, SmartBear Software)
+
+Files
+-----
+swagger-ui-bundle.js  https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.33.0/swagger-ui-bundle.js
+swagger-ui.css        https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.33.0/swagger-ui.css
+
+Both files are byte-for-byte as published. They are served by GET /docs so the
+API browser does not depend on a CDN being reachable.
+
+favicon.png is the FastAPI documentation favicon (FastAPI, MIT Licence).
+
+Deleting this directory does not affect the API. /docs would fall back to a
+blank page; /health and /optimize-energy are untouched.

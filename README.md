@@ -24,6 +24,41 @@ trusted until it has been validated.
 
 ---
 
+## Test it in 30 seconds
+
+Nothing to install, no account, no key of your own. Pick either path.
+
+**1. Browser, no typing.** Open
+<https://gridwise-fallback.onrender.com/docs>, expand `POST /optimize-energy`,
+press **Try it out**, then **Execute**. The body is already filled with a valid
+24-hour scenario — do not edit it. The response comes back in about 1.5 s.
+
+**2. One command.** The same thing from a terminal:
+
+```bash
+curl -s https://gridwise-fallback.onrender.com/optimize-energy \
+  -H 'content-type: application/json' \
+  -d @- <<'JSON' | python -m json.tool
+{"scenario_id":"SAMPLE-01","operator_notes":["Facilities will wash the rooftop solar panels from noon until 2 PM. During cleaning, usable solar should be treated as roughly 25% of the forecast.","The sports office moved next month's registration deadline."],"hours":[{"hour":0,"demand_kwh":90,"solar_kwh":0,"tariff_bdt_per_kwh":6},{"hour":1,"demand_kwh":85,"solar_kwh":0,"tariff_bdt_per_kwh":6},{"hour":2,"demand_kwh":80,"solar_kwh":0,"tariff_bdt_per_kwh":5},{"hour":3,"demand_kwh":80,"solar_kwh":0,"tariff_bdt_per_kwh":5},{"hour":4,"demand_kwh":85,"solar_kwh":0,"tariff_bdt_per_kwh":5},{"hour":5,"demand_kwh":95,"solar_kwh":0,"tariff_bdt_per_kwh":6},{"hour":6,"demand_kwh":110,"solar_kwh":5,"tariff_bdt_per_kwh":8},{"hour":7,"demand_kwh":130,"solar_kwh":20,"tariff_bdt_per_kwh":10},{"hour":8,"demand_kwh":150,"solar_kwh":50,"tariff_bdt_per_kwh":12},{"hour":9,"demand_kwh":165,"solar_kwh":90,"tariff_bdt_per_kwh":14},{"hour":10,"demand_kwh":175,"solar_kwh":130,"tariff_bdt_per_kwh":16},{"hour":11,"demand_kwh":180,"solar_kwh":160,"tariff_bdt_per_kwh":16},{"hour":12,"demand_kwh":185,"solar_kwh":180,"tariff_bdt_per_kwh":15},{"hour":13,"demand_kwh":180,"solar_kwh":170,"tariff_bdt_per_kwh":14},{"hour":14,"demand_kwh":170,"solar_kwh":140,"tariff_bdt_per_kwh":13},{"hour":15,"demand_kwh":165,"solar_kwh":90,"tariff_bdt_per_kwh":14},{"hour":16,"demand_kwh":170,"solar_kwh":45,"tariff_bdt_per_kwh":18},{"hour":17,"demand_kwh":185,"solar_kwh":10,"tariff_bdt_per_kwh":22},{"hour":18,"demand_kwh":205,"solar_kwh":0,"tariff_bdt_per_kwh":28},{"hour":19,"demand_kwh":215,"solar_kwh":0,"tariff_bdt_per_kwh":30},{"hour":20,"demand_kwh":205,"solar_kwh":0,"tariff_bdt_per_kwh":26},{"hour":21,"demand_kwh":175,"solar_kwh":0,"tariff_bdt_per_kwh":18},{"hour":22,"demand_kwh":135,"solar_kwh":0,"tariff_bdt_per_kwh":10},{"hour":23,"demand_kwh":105,"solar_kwh":0,"tariff_bdt_per_kwh":7}],"battery":{"capacity_kwh":220,"initial_energy_kwh":110,"minimum_energy_kwh":40,"max_charge_kwh_per_hour":50,"max_discharge_kwh_per_hour":50}}
+JSON
+```
+
+**What a correct response shows.** `directive_interpretation` has one entry per
+note: the panel-washing note becomes `solar_reduction` with
+`{"hours": [12, 13], "factor": 0.25}`, and the registration note becomes `no_op`
+— it is campus news, not an energy instruction, and marking it `applies: true`
+would be a wrong answer. `total_cost_bdt` is `38365.00`, which is the optimum,
+and `hourly_plan` holds exactly 24 rows.
+
+**3. Beyond one case.** `tools/run_public_cases.py` runs all ten published
+sample cases against any base URL and prints a pass/fail line per case:
+
+```bash
+python tools/run_public_cases.py --live --url https://gridwise-fallback.onrender.com
+```
+
+---
+
 ## Live deployment
 
 | | |
@@ -612,7 +647,8 @@ gridwise-fallback/
 │   ├── interpret.py     LLM prompt, provider call, JSON extraction  (model)
 │   ├── guardrails.py    deterministic validation of model output
 │   ├── optimizer.py     linear program construction and exact solve
-│   └── replay.py        independent verification and total recalculation
+│   ├── replay.py        independent verification and total recalculation
+│   └── static/          vendored Swagger UI assets served by /docs (see Credits)
 ├── tests/
 │   └── test_pipeline.py unit, contract, OpenAPI and public-case tests (59)
 ├── tools/
@@ -630,9 +666,110 @@ gridwise-fallback/
 
 ---
 
-## Attribution
+## Credits and attribution
 
-Core architecture, the optimisation model, guardrail design and all
-implementation are the team's own work. Third-party libraries are credited under
-[Dependencies](#dependencies). AI coding assistants were used during development,
-consistent with the competition rulebook.
+The Participant Guide (§04) requires that all external tools and dependencies be
+credited in this file. Everything used is listed below.
+
+### Core work
+
+The architecture, the optimisation model, the guardrail rules, the replay
+verifier and every line of application code are the team's own work. No
+third-party code, template or reference implementation was copied into the
+pipeline. Organiser-supplied material was used only as input data — see
+*Organiser material* below.
+
+### Language model and provider
+
+| | |
+|---|---|
+| **Submitted route** | DeepSeek — `deepseek-chat` via the OpenAI-compatible chat-completions API |
+| **Fallback route** | Any Anthropic-Messages-compatible endpoint (developed against Aerolink) |
+| **Offline route** | A local Ollama model, for environments with no external access |
+
+The service speaks both API shapes; switching provider is three environment
+variables and no code change, documented in [Configuration](#configuration).
+Per the guide's *External Model Responsibility* clause, the team is responsible
+for this dependency's credentials, quota, rate limits and availability. The
+credential is supplied at run time and is never committed — see
+[Secret handling](#secret-handling).
+
+### Solver
+
+Linear programming is solved by **HiGHS** through `scipy.optimize.linprog`
+(`method="highs"`). HiGHS is MIT-licensed and ships inside `scipy`; no solver
+binary is bundled separately and no runtime training or fine-tuning is required.
+
+### Libraries
+
+Every runtime and development dependency, with version and licence, is listed
+under [Dependencies](#dependencies) — FastAPI, Uvicorn, Pydantic, NumPy, SciPy,
+HTTPX, python-dotenv and pytest. There are no other packages, no vendored source
+outside the three files below, and no system packages beyond a Python base image.
+
+### Vendored front-end assets
+
+`/docs` serves its own API browser so it does not depend on a CDN. These files
+are the only third-party content redistributed in this repository:
+
+| File | Source | Licence |
+|---|---|---|
+| `app/static/swagger-ui-bundle.js` | swagger-ui-dist 5.33.0 | Apache-2.0 |
+| `app/static/swagger-ui.css` | swagger-ui-dist 5.33.0 | Apache-2.0 |
+| `app/static/favicon.png` | FastAPI documentation | MIT |
+
+They are unmodified, and `app/static/VERSION.txt` records the exact upstream
+version. Swagger UI is a project of SmartBear Software; FastAPI is by Sebastián
+Ramírez. Neither is used in the scoring path — the page is documentation only,
+and deleting `app/static/` leaves the API fully functional.
+
+> **Outstanding licence item.** The minified bundle carries the header
+> `/*! For license information please see swagger-ui-bundle.js.LICENSE.txt */`,
+> referring to a third-party notices file that has not been vendored alongside
+> it. To complete the redistribution, fetch it from the same version:
+> `https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.33.0/swagger-ui-bundle.js.LICENSE.txt`
+> and save it as `app/static/swagger-ui-bundle.js.LICENSE.txt`. Apache-2.0 does
+> not require this file to be served, but it does require the notices to travel
+> with the distribution, so it belongs in the repository.
+
+### Container base image
+
+`python:3.12-slim`, the official Docker Hub Python image (Python Software
+Foundation Licence). No other image layers are inherited.
+
+### Organiser material
+
+The following were supplied by the organisers and remain their property. They
+are used as test input, not redistributed as our work:
+
+- The Problem Statement and Participant Guide / Evaluation Rubric.
+- `tools/public_sample_cases.json` — the public sample pack, vendored so the
+  repository runs standalone.
+- `tools/sample_request.json` — case `SAMPLE-01` of that pack, byte-identical.
+
+### AI coding assistants
+
+Used during development, which §04 permits: *"AI coding assistants and public
+libraries/frameworks/APIs/SDKs are permitted under the official rulebook, but
+core architecture and logic should be the team's own work."*
+
+The team's declaration of scope, so the boundary is stated rather than implied.
+**Confirm this is accurate before submitting — it describes our process, and only
+we can vouch for it.**
+
+- **Used for:** drafting and refactoring code, writing and running the test
+  suite, reviewing the implementation against the guide, vendoring the API
+  browser assets under `app/static/`, and drafting this README and the
+  deployment documentation.
+- **Core design remains the team's own:** the optimisation formulation, the
+  directive semantics and the whole-hour window convention, and the guardrail
+  rules were specified by the team from the Problem Statement. None of them was
+  delegated to an assistant.
+- **Not in the scoring path.** No assistant, agent or hosted coding service
+  participates in serving a request. The only language model in the request path
+  is the one named under *Language model and provider*, called by our own code.
+
+### Acknowledgements
+
+Thanks to the **BUP CSE Fest 2026** organisers for the Problem Statement, the
+public sample pack and a rubric specific enough to build against.
