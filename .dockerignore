@@ -1,0 +1,27 @@
+# Keep credentials and local state out of the build context entirely.
+# The image itself never copied .env (the Dockerfile copies only app/ and
+# tools/), but the context is uploaded to the daemon and to any remote builder,
+# so a future `COPY . .` must not be able to pull secrets in.
+.env
+*.env
+.env.*
+
+# Version control and editor state
+.git
+.gitignore
+.vscode/
+.idea/
+
+# Local artefacts and logs
+_scratch/
+out/
+*.log
+
+# Python caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/

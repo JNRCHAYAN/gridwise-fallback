@@ -1,0 +1,28 @@
+# Secrets — never commit
+.env
+*.env
+.env.*
+
+# ...except the empty template, which the README's quickstart tells users to
+# copy. It holds variable names and placeholders only, never a value.
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Local artefacts
+_scratch/
+out/
+*.log
+
+# Editor / agent tool state — never part of the submission
+.claude/
+.kilo/
+.vscode/
+.idea/
