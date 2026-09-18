@@ -729,6 +729,7 @@ are the only third-party content redistributed in this repository:
 |---|---|---|
 | `app/static/swagger-ui-bundle.js` | swagger-ui-dist 5.33.0 | Apache-2.0 |
 | `app/static/swagger-ui.css` | swagger-ui-dist 5.33.0 | Apache-2.0 |
+| `app/static/swagger-ui-bundle.js.LICENSE.txt` | swagger-ui-dist 5.33.0 | Third-party notices for the bundle (MIT and others) |
 | `app/static/favicon.png` | FastAPI documentation | MIT |
 
 They are unmodified, and `app/static/VERSION.txt` records the exact upstream
@@ -736,14 +737,10 @@ version. Swagger UI is a project of SmartBear Software; FastAPI is by Sebastián
 Ramírez. Neither is used in the scoring path — the page is documentation only,
 and deleting `app/static/` leaves the API fully functional.
 
-> **Outstanding licence item.** The minified bundle carries the header
-> `/*! For license information please see swagger-ui-bundle.js.LICENSE.txt */`,
-> referring to a third-party notices file that has not been vendored alongside
-> it. To complete the redistribution, fetch it from the same version:
-> `https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.33.0/swagger-ui-bundle.js.LICENSE.txt`
-> and save it as `app/static/swagger-ui-bundle.js.LICENSE.txt`. Apache-2.0 does
-> not require this file to be served, but it does require the notices to travel
-> with the distribution, so it belongs in the repository.
+The `.LICENSE.txt` file is the notices bundle that `swagger-ui-bundle.js` refers
+to in its own header comment. Apache-2.0 does not require it to be *served*, but
+it does require the notices to travel with the distribution, so it is vendored
+alongside the bundle and is not itself loaded by the page.
 
 ### Container base image
 
