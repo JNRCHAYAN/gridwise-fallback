@@ -23,10 +23,13 @@ import logging
 import os
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 # Load a local .env when one is present, so the README quickstart is a single
 # command rather than a shell incantation. Guarded because python-dotenv is not
@@ -72,7 +75,29 @@ app = FastAPI(
     version="1.0.0",
     description="LLM-assisted operator directive interpretation and 24-hour energy optimisation.",
     lifespan=lifespan,
+    # Both defaults point the browser at cdn.jsdelivr.net / redoc CDN. A judge
+    # behind an egress filter, an offline sandbox, or a flaky network would see
+    # a blank page. The assets below are vendored under app/static instead, so
+    # /docs renders from this container alone.
+    docs_url=None,
+    redoc_url=None,
 )
+
+# Static assets for the self-hosted API browser (swagger-ui-dist 5.33.0).
+_STATIC_DIR = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
+
+
+@app.get("/docs", include_in_schema=False)
+def docs() -> HTMLResponse:
+    """Swagger UI, served entirely from this service — no CDN, works offline."""
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=f"{app.title} — API browser",
+        swagger_js_url="/static/swagger-ui-bundle.js",
+        swagger_css_url="/static/swagger-ui.css",
+        swagger_favicon_url="/static/favicon.png",
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -35,7 +35,9 @@ trusted until it has been validated.
 
 Both endpoints are public — no login, dashboard, VPN or approval is required.
 `/docs` serves Swagger UI with a complete, valid 24-hour scenario pre-filled, so
-*Try it out → Execute* returns a real plan with no editing.
+*Try it out → Execute* returns a real plan with no editing. The API browser loads
+its own JavaScript and CSS from this service (`app/static/`), not from a CDN, so
+it renders on a locked-down or offline network.
 
 > **Cold starts.** The hosted instance runs on a free tier that scales to zero
 > after 15 minutes idle; the first request after that takes ~50 s. A keep-alive
